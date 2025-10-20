@@ -1,0 +1,35 @@
+# 依赖目录
+node_modules/
+.pnpm-store/
+
+# 构建输出
+dist/
+build/
+.vitepress/dist/
+
+# 临时文件
+temp/
+*.tmp
+*.temp
+
+# 日志文件
+*.log
+logs/
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# IDE文件
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 其他
+coverage/
+.nyc_output/

@@ -1,0 +1,19 @@
+[
+  {
+    "key": "ctrl+shift+f",
+    "command": "editor.action.formatDocument",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+shift+p",
+    "command": "workbench.action.showCommands"
+  },
+  {
+    "key": "ctrl+shift+`",
+    "command": "workbench.action.terminal.new"
+  },
+  {
+    "key": "ctrl+k ctrl+s",
+    "command": "workbench.action.openGlobalKeybindings"
+  }
+]

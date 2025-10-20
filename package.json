@@ -6,8 +6,8 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "markdownlint **/*.md --ignore node_modules",
-    "lint:fix": "markdownlint **/*.md --fix --ignore node_modules"
+    "lint": "markdownlint **/*.md --config .markdownlint.yaml --ignore node_modules",
+    "lint:fix": "markdownlint **/*.md --config .markdownlint.yaml --fix --ignore node_modules"
   },
   "devDependencies": {
     "markdownlint-cli": "^0.45.0",
