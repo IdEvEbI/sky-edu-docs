@@ -1,7 +1,7 @@
 {
   "name": "sky-edu-docs",
   "version": "1.0.0",
-  "description": "Sky Education Platform Documentation",
+  "description": "数科汇智平台 | SkyEdu Intelligence Hub Documentation",
   "private": true,
   "scripts": {
     "format": "prettier --write .",
