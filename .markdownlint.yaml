@@ -5,7 +5,7 @@
 default: true
 
 # MD013: 行长度限制
-# 设置为 200 字符，适合中文文档的长句子
+# 设置为 200 字符，适合中文文档的长句子表达
 # code_blocks: false - 代码块不限制长度
 # tables: false - 表格不限制长度
 MD013:
@@ -25,7 +25,7 @@ MD033: false
 # MD025: 多个一级标题检查
 # front_matter_title: "" - 允许前置元数据中的标题
 MD025:
-  front_matter_title: ''
+  front_matter_title: ""
 
 # MD007: 无序列表缩进
 # indent: 2 - 使用 2 个空格缩进

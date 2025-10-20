@@ -1,0 +1,47 @@
+# pnpm 配置文件
+# 更多信息: https://pnpm.io/zh/configuring
+
+# 自动安装对等依赖
+auto-install-peers = true
+
+# 严格对等依赖
+strict-peer-dependencies = false
+
+# 保存精确版本
+save-exact = false
+
+# 保存前缀
+save-prefix = '^'
+
+# 包管理器
+package-manager-strict = true
+
+# 网络配置
+registry = https://registry.npmjs.org/
+
+# 并发安装数
+network-concurrency = 8
+
+# 超时时间
+network-timeout = 300000
+
+# 日志级别
+loglevel = info
+
+# 颜色输出
+color = true
+
+# 进度条
+progress = true
+
+# 递归安装
+recursive = true
+
+# 工作空间配置
+workspace-concurrency = 4
+
+# 共享工作空间锁文件
+shared-workspace-lockfile = true
+
+# 共享工作空间文件
+shared-workspace-file = true
