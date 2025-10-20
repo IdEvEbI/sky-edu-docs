@@ -1,12 +1,7 @@
 {
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.codeActionsOnSave": {
-    "source.fixAll.markdownlint": "explicit"
-  },
   "[markdown]": {
-    "editor.formatOnSave": true,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.wordWrap": "on",
     "editor.quickSuggestions": {
       "comments": "off",
@@ -14,26 +9,5 @@
       "other": "off"
     }
   },
-  "markdownlint.config": ".markdownlint.yaml",
-  "files.associations": {
-    "*.md": "markdown"
-  },
-  "files.exclude": {
-    "**/node_modules": true,
-    "**/.pnpm-store": true,
-    "**/dist": true,
-    "**/.vitepress/dist": true
-  },
-  "search.exclude": {
-    "**/node_modules": true,
-    "**/.pnpm-store": true,
-    "**/dist": true,
-    "**/.vitepress/dist": true
-  },
-  "emmet.includeLanguages": {
-    "markdown": "html"
-  },
-  "markdown.preview.breaks": true,
-  "markdown.preview.linkify": true,
-  "markdown.preview.typographer": true
+  "markdownlint.config": ".markdownlint.yaml"
 }

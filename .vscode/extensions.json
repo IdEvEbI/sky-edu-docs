@@ -4,12 +4,6 @@
     "davidanson.vscode-markdownlint",
     "yzhang.markdown-all-in-one",
     "shd101wyy.markdown-preview-enhanced",
-    "bierner.markdown-mermaid",
-    "ms-vscode.vscode-json",
-    "bradlc.vscode-tailwindcss",
-    "ms-vscode.vscode-typescript-next",
-    "ms-vscode.vscode-eslint",
-    "ms-vscode.vscode-prettier"
+    "bierner.markdown-mermaid"
   ]
 }
-

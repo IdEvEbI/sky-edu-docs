@@ -2,34 +2,6 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Format Documents",
-      "type": "shell",
-      "command": "pnpm",
-      "args": ["format"],
-      "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Check Format",
-      "type": "shell",
-      "command": "pnpm",
-      "args": ["format:check"],
-      "group": "test",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
-      "problemMatcher": []
-    },
-    {
       "label": "Lint Markdown",
       "type": "shell",
       "command": "pnpm",
@@ -41,7 +13,8 @@
         "focus": false,
         "panel": "shared"
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "detail": "Check Markdown files for linting issues"
     },
     {
       "label": "Fix Markdown",
@@ -55,7 +28,8 @@
         "focus": false,
         "panel": "shared"
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "detail": "Fix Markdown linting issues automatically"
     }
   ]
 }
