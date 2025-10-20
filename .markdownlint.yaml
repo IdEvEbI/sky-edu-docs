@@ -1,0 +1,42 @@
+# Markdownlint 配置文件
+# 用于检查 Markdown 文档的格式和规范
+
+# 启用默认规则集
+default: true
+
+# MD013: 行长度限制
+# 设置为 200 字符，适合中文文档的长句子表达
+# code_blocks: false - 代码块不限制长度
+# tables: false - 表格不限制长度
+MD013:
+  line_length: 200
+  code_blocks: false
+  tables: false
+
+# MD024: 标题重复检查
+# siblings_only: true - 只检查同级标题是否重复
+MD024:
+  siblings_only: true
+
+# MD033: 禁用 HTML 标签检查
+# 允许在 Markdown 中使用 HTML 标签
+MD033: false
+
+# MD025: 多个一级标题检查
+# front_matter_title: "" - 允许前置元数据中的标题
+MD025:
+  front_matter_title: ""
+
+# MD007: 无序列表缩进
+# indent: 2 - 使用 2 个空格缩进
+MD007:
+  indent: 2
+
+# MD012: 连续空行限制
+# maximum: 1 - 最多允许 1 个连续空行
+MD012:
+  maximum: 1
+
+# MD040: 禁用代码块语言检查
+# 允许代码块不指定语言
+MD040: false
