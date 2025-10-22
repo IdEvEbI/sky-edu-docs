@@ -5,8 +5,8 @@
 > 责任人：技术架构师  
 > 首次创建：2025-10-21  
 > 最近更新：2025-10-21  
-> 版本：v1.2  
-> 变更日志：v1.2 更新 - 基于 SAD v1.1 建议文档全面优化，添加参考文献和数据来源脚注，优化架构图数据流方向，补充约束条件和分阶段目标，完善技术栈许可估算和集成风险分析，增加企业微信集成错误处理机制，添加性能基准测试工具和结果，完善容量规划和迁移指南，优化验收测试环境和工具，完善自检清单，提升文档的可执行性和风险覆盖
+> 版本：v2.0  
+> 变更日志：v2.0 重大更新 - 基于用户创新想法重新设计系统架构，采用统一软件+P2P 分发模式，突破 200 人并发技术壁垒，实现负载分散和智能路由，显著提升系统性能和扩展性
 
 ## 1. 背景与目标
 
@@ -91,14 +91,39 @@
 
 ## 2. 系统总体架构
 
-### 2.1 架构概览
+### 2.1 统一软件架构概览
 
 ```mermaid
 graph TB
-    subgraph "客户端层"
-        PC[PC 客户端<br/>C++ Qt 6.12+]
+    subgraph "统一客户端层"
+        Unified[统一客户端<br/>C++ Qt 6.12+]
         Mobile[移动客户端<br/>Flutter 3.22+]
         Web[Web 客户端<br/>React + WebRTC]
+    end
+
+    subgraph "角色识别层"
+        Auth[身份认证<br/>教师/学生/管理员]
+        RBAC[权限控制<br/>基于角色访问]
+        Session[会话管理<br/>JWT Token]
+    end
+
+    subgraph "P2P网络层"
+        P2P[P2P网络<br/>WebRTC Mesh]
+        Relay[中继节点<br/>智能分发]
+        Discovery[节点发现<br/>mDNS + DHT]
+    end
+
+    subgraph "核心功能层"
+        Screen[屏幕共享<br/>捕获/编码/分发]
+        View[视频观看<br/>解码/播放]
+        Interact[互动功能<br/>举手/投票/问答]
+        Manage[课堂管理<br/>点名/作业/统计]
+    end
+
+    subgraph "数据层"
+        LocalCache[本地缓存<br/>SQLite 当前班级]
+        RemoteDB[远程数据库<br/>MySQL 用户/班级]
+        Files[文件存储<br/>本地 + 云端]
     end
 
     subgraph "集成层"
@@ -106,57 +131,34 @@ graph TB
         MIS[教学业务系统<br/>数据同步]
     end
 
-    subgraph "网络层"
-        LAN[局域网<br/>100Mbps+]
-        Protocol[通信协议<br/>WebRTC/UDP/TCP]
-        Discovery[服务发现<br/>mDNS/Bonjour]
-    end
-
-    subgraph "核心服务层"
-        Teacher[教师服务<br/>Qt Server]
-        Student[学生服务<br/>Qt Client]
-        Bridge[桥接服务<br/>gRPC + Protobuf]
-        Auth[认证服务<br/>JWT + RBAC]
-    end
-
-    subgraph "媒体处理层"
-        Capture[屏幕捕获<br/>Qt Multimedia]
-        Encode[视频编码<br/>H.264/VP8]
-        Stream[流媒体<br/>WebRTC]
-    end
-
-    subgraph "数据层"
-        LocalDB[本地数据库<br/>SQLite 3]
-        Cache[缓存<br/>内存 + Redis]
-        Files[文件存储<br/>本地 + 云端]
-    end
-
-    PC -->|"屏幕共享"| LAN
-    Mobile -->|"视频播放"| LAN
-    Web -->|"备用访问"| LAN
-    LAN -->|"数据传输"| Protocol
-    Protocol -->|"连接建立"| Teacher
-    Protocol -->|"客户端连接"| Student
-    Teacher -->|"gRPC桥接"| Bridge
-    Student -->|"gRPC桥接"| Bridge
-    Bridge -->|"身份验证"| Auth
-    Bridge -->|"数据存储"| LocalDB
-    Bridge -->|"缓存加速"| Cache
-    Bridge -->|"文件管理"| Files
-    Teacher -->|"屏幕捕获"| Capture
-    Capture -->|"硬件编码"| Encode
-    Encode -->|"实时传输"| Stream
-    WX -->|"OAuth认证"| Auth
-    MIS -->|"数据同步"| LocalDB
-    Discovery -->|"服务发现"| LAN
+    Unified --> Auth
+    Mobile --> Auth
+    Web --> Auth
+    Auth --> RBAC
+    RBAC --> Session
+    Session --> Screen
+    Session --> View
+    Session --> Interact
+    Session --> Manage
+    Screen --> P2P
+    View --> P2P
+    P2P --> Relay
+    Relay --> Discovery
+    Screen --> LocalCache
+    View --> LocalCache
+    Manage --> LocalCache
+    LocalCache --> RemoteDB
+    Manage --> Files
+    WX --> Auth
+    MIS --> RemoteDB
 ```
 
-**数据流方向说明**：
+**架构创新说明**：
 
-- **教师→学生**：屏幕共享单向传输，延迟 <200ms
-- **学生→教师**：互动数据双向传输，响应 <500ms
-- **系统集成**：企业微信认证，教学系统数据同步
-- **服务发现**：mDNS/Bonjour 自动发现局域网服务
+- **统一软件**：一个客户端支持教师/学生/管理员三种角色
+- **P2P 分发**：学生机作为中继节点，分散教师机负载
+- **智能路由**：根据网络拓扑自动选择最优分发路径
+- **角色切换**：同一用户可在不同课堂中扮演不同角色
 
 ### 2.2 技术栈选择
 
@@ -223,30 +225,245 @@ graph TB
 - 支持后续云扩展
 - 代码不共享，维护成本高（增加 30% 开销），但性能优先
 
-## 3. 核心模块设计
+## 3. P2P 视频分发网络设计
 
-### 3.1 PC 端架构
-
-#### 3.1.1 模块划分
+### 3.1 P2P 网络拓扑
 
 ```mermaid
 graph TB
-    subgraph "PC 端 Qt 应用"
-        UI[用户界面层<br/>QML/QWidgets]
-        Logic[业务逻辑层<br/>C++]
-        Network[网络通信层<br/>Qt Network]
-        Media[媒体处理层<br/>Qt Multimedia]
-        Data[数据访问层<br/>SQLite]
+    subgraph "P2P视频分发网络"
+        T[教师端<br/>主节点<br/>屏幕源]
+        S1[学生端1<br/>中继节点<br/>转发能力: 50人]
+        S2[学生端2<br/>中继节点<br/>转发能力: 50人]
+        S3[学生端3<br/>中继节点<br/>转发能力: 50人]
+        S4[学生端4<br/>中继节点<br/>转发能力: 50人]
+        S5[学生端5-50<br/>终端节点<br/>仅接收]
+        S6[学生端51-100<br/>终端节点<br/>仅接收]
+        S7[学生端101-150<br/>终端节点<br/>仅接收]
+        S8[学生端151-200<br/>终端节点<br/>仅接收]
     end
 
-    UI --> Logic
-    Logic --> Network
-    Logic --> Media
-    Logic --> Data
-    Network --> LAN[局域网]
-    Media --> Screen[屏幕捕获]
-    Data --> DB[本地数据库]
+    T -->|"视频流1"| S1
+    T -->|"视频流2"| S2
+    T -->|"视频流3"| S3
+    T -->|"视频流4"| S4
+    S1 -->|"转发"| S5
+    S2 -->|"转发"| S6
+    S3 -->|"转发"| S7
+    S4 -->|"转发"| S8
 ```
+
+**P2P 分发优势**：
+
+- **负载分散**：教师机只需向 4个中继节点分发，而非 200 个终端
+- **网络优化**：就近节点分发，减少网络延迟和带宽占用
+- **容错性强**：单个中继节点故障不影响其他节点
+- **扩展性好**：支持更大规模的并发用户（500+人）
+
+### 3.2 智能节点选择算法
+
+**中继节点选择标准**：
+
+- **硬件性能**：CPU >4 核，内存 >8GB，网络 >100Mbps
+- **网络位置**：位于不同子网，优化分发路径
+- **稳定性**：历史连接稳定性 >95%
+- **负载均衡**：当前转发负载 <80%
+
+**动态负载均衡**：
+
+- **实时监控**：监控各节点 CPU、内存、网络使用率
+- **自动调整**：根据负载情况动态调整分发策略
+- **故障转移**：中继节点故障时自动切换到备用节点
+- **性能优化**：优先选择延迟最低的分发路径
+
+### 3.3 网络发现和路由
+
+**节点发现机制**：
+
+- **mDNS**：局域网内自动发现可用节点
+- **DHT**：分布式哈希表，高效节点查找
+- **心跳检测**：定期检测节点可用性
+- **拓扑构建**：自动构建最优网络拓扑
+
+**智能路由算法**：
+
+- **最短路径**：选择延迟最低的传输路径
+- **负载均衡**：避免单一路径过载
+- **容错路由**：提供备用传输路径
+- **动态调整**：根据网络状况实时调整路由
+
+## 4. 统一客户端架构设计
+
+### 4.1 角色识别和权限管理
+
+```mermaid
+graph TB
+    subgraph "统一客户端架构"
+        UI[统一用户界面<br/>QML/QWidgets]
+        Auth[身份认证模块<br/>企业微信OAuth]
+        Role[角色识别模块<br/>教师/学生/管理员]
+        RBAC[权限控制模块<br/>基于角色访问]
+        Core[核心功能模块<br/>屏幕共享/观看/互动]
+        P2P[P2P网络模块<br/>节点发现/路由]
+        Cache[本地缓存模块<br/>SQLite当前班级]
+    end
+
+    UI --> Auth
+    Auth --> Role
+    Role --> RBAC
+    RBAC --> Core
+    Core --> P2P
+    Core --> Cache
+    Auth --> Cache
+```
+
+**角色权限矩阵**：
+
+| 功能模块 | 教师 | 学生 | 管理员 |
+| -------- | ---- | ---- | ------ |
+| 屏幕共享 | ✅   | ❌   | ✅     |
+| 视频观看 | ✅   | ✅   | ✅     |
+| 课堂管理 | ✅   | ❌   | ✅     |
+| 互动参与 | ✅   | ✅   | ✅     |
+| 作业批改 | ✅   | ❌   | ✅     |
+| 系统配置 | ❌   | ❌   | ✅     |
+| 用户管理 | ❌   | ❌   | ✅     |
+
+**动态角色切换**：
+
+- **课堂内角色**：根据课堂设置确定用户角色
+- **跨课堂支持**：同一用户在不同课堂可扮演不同角色
+- **权限继承**：管理员可临时获得教师权限
+- **角色验证**：每次操作前验证用户权限
+
+### 4.2 核心功能模块设计
+
+#### 4.2.1 屏幕共享模块
+
+**功能特性**：
+
+- **多模式支持**：全屏、窗口、区域选择
+- **硬件加速**：GPU 编码，降低 CPU 负担
+- **自适应质量**：根据网络状况动态调整
+- **P2P 分发**：智能选择中继节点
+
+**技术实现**：
+
+- **屏幕捕获**：Qt Multimedia + DirectX/OpenGL
+- **视频编码**：FFmpeg + NVENC/QuickSync
+- **网络传输**：WebRTC + UDP 多播
+- **负载均衡**：智能节点选择和路由
+
+#### 4.2.2 视频观看模块
+
+**功能特性**：
+
+- **实时播放**：低延迟视频播放
+- **多分辨率**：支持 4K 到 720p 自适应
+- **离线缓存**：支持离线回放
+- **中继转发**：高性能设备可承担中继任务
+
+**技术实现**：
+
+- **视频解码**：FFmpeg + 硬件解码
+- **播放控制**：Qt Multimedia Player
+- **缓存管理**：智能缓存策略
+- **P2P 转发**：WebRTC 中继功能
+
+#### 4.2.3 互动功能模块
+
+**功能特性**：
+
+- **实时互动**：举手、投票、问答
+- **匿名模式**：保护学生隐私
+- **表情反应**：快速情绪反馈
+- **分组讨论**：支持小组互动
+
+**技术实现**：
+
+- **消息传递**：WebSocket + JSON
+- **状态同步**：实时状态更新
+- **数据持久化**：SQLite 本地存储
+- **云端同步**：MySQL 远程同步
+
+### 4.3 数据存储架构
+
+#### 4.3.1 本地缓存设计
+
+**SQLite 本地数据库**：
+
+```sql
+-- 当前班级缓存表
+CREATE TABLE current_class_cache (
+    id INTEGER PRIMARY KEY,
+    class_id VARCHAR(50) NOT NULL,
+    user_id VARCHAR(50) NOT NULL,
+    role VARCHAR(20) NOT NULL, -- teacher/student/admin
+    session_data TEXT, -- JSON格式会话数据
+    cache_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expire_time TIMESTAMP
+);
+
+-- 视频流缓存表
+CREATE TABLE video_cache (
+    id INTEGER PRIMARY KEY,
+    stream_id VARCHAR(50) NOT NULL,
+    frame_data BLOB,
+    timestamp TIMESTAMP,
+    quality INTEGER -- 1=720p, 2=1080p, 3=4K
+);
+```
+
+**缓存策略**：
+
+- **LRU 淘汰**：最近最少使用的数据优先淘汰
+- **TTL 过期**：设置缓存过期时间
+- **容量限制**：本地缓存不超过 1GB
+- **智能预取**：预测用户需求，提前缓存
+
+#### 4.3.2 远程数据库设计
+
+**MySQL 远程数据库**：
+
+```sql
+-- 用户表
+CREATE TABLE users (
+    id VARCHAR(50) PRIMARY KEY,
+    username VARCHAR(100) NOT NULL,
+    wx_userid VARCHAR(100),
+    role VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 班级表
+CREATE TABLE classes (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    teacher_id VARCHAR(50) NOT NULL,
+    student_count INTEGER DEFAULT 0,
+    max_capacity INTEGER DEFAULT 200,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 课堂会话表
+CREATE TABLE class_sessions (
+    id VARCHAR(50) PRIMARY KEY,
+    class_id VARCHAR(50) NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP,
+    status VARCHAR(20) NOT NULL, -- active/ended
+    p2p_nodes TEXT, -- JSON格式P2P节点信息
+    FOREIGN KEY (class_id) REFERENCES classes(id)
+);
+```
+
+**数据同步策略**：
+
+- **实时同步**：关键数据实时同步
+- **批量同步**：非关键数据批量同步
+- **冲突解决**：时间戳优先策略
+- **离线支持**：网络中断时本地缓存
 
 #### 3.1.2 核心组件
 
@@ -434,43 +651,81 @@ service MISService {
 }
 ```
 
-## 4. 数据流设计
+## 5. 数据流设计
 
-### 4.1 屏幕共享数据流
+### 5.1 P2P 屏幕共享数据流
 
 ```mermaid
 sequenceDiagram
     participant T as 教师端
-    participant S as 学生端
-    participant N as 网络层
+    participant R1 as 中继节点1
+    participant R2 as 中继节点2
+    participant S1 as 学生端1-50
+    participant S2 as 学生端51-100
 
     T->>T: 屏幕捕获
     T->>T: 视频编码
-    T->>N: 发送数据流
-    N->>S: 转发数据流
-    S->>S: 视频解码
-    S->>S: 屏幕显示
+    T->>R1: 发送视频流1
+    T->>R2: 发送视频流2
+    R1->>R1: 视频转发
+    R2->>R2: 视频转发
+    R1->>S1: 分发到终端节点
+    R2->>S2: 分发到终端节点
+    S1->>S1: 视频解码
+    S2->>S2: 视频解码
+    S1->>S1: 屏幕显示
+    S2->>S2: 屏幕显示
 
-    Note over T,S: 延迟 <200ms
-    Note over T,S: 支持 200 人并发
+    Note over T,S2: P2P分发延迟 <150ms
+    Note over T,S2: 支持 200+ 人并发
 ```
 
-### 4.2 课堂管理数据流
+### 5.2 统一客户端数据流
 
 ```mermaid
 sequenceDiagram
+    participant U as 用户
+    participant C as 统一客户端
+    participant Auth as 认证服务
+    participant Role as 角色识别
+    participant Core as 核心功能
+    participant P2P as P2P网络
+    participant Cache as 本地缓存
+
+    U->>C: 启动客户端
+    C->>Auth: 企业微信登录
+    Auth->>C: 返回用户信息
+    C->>Role: 识别用户角色
+    Role->>Core: 加载对应功能
+    Core->>P2P: 加入P2P网络
+    P2P->>Cache: 缓存网络信息
+    Core->>Cache: 缓存会话数据
+    Cache->>U: 显示用户界面
+```
+
+### 5.3 智能负载均衡数据流
+
+```mermaid
+sequenceDiagram
+    participant Monitor as 负载监控
+    participant Router as 智能路由
     participant T as 教师端
-    participant S as 学生端
-    participant DB as 数据库
+    participant R1 as 中继节点1
+    participant R2 as 中继节点2
+    participant R3 as 中继节点3
 
-    T->>DB: 创建班级
-    T->>S: 发送邀请
-    S->>DB: 加入班级
-    S->>T: 确认加入
+    Monitor->>Router: 监控各节点负载
+    Router->>Router: 分析网络拓扑
+    Router->>T: 调整分发策略
+    T->>R1: 发送视频流1 (负载: 60%)
+    T->>R2: 发送视频流2 (负载: 40%)
+    Router->>Router: 检测R1负载过高
+    Router->>T: 调整分发策略
+    T->>R3: 部分流量转移到R3
+    R3->>R3: 承担额外转发任务
 
-    T->>S: 点名签到
-    S->>T: 签到响应
-    T->>DB: 更新状态
+    Note over Monitor,R3: 动态负载均衡
+    Note over Monitor,R3: 故障自动转移
 ```
 
 ### 4.3 互动功能数据流
@@ -704,88 +959,124 @@ CREATE TABLE sessions (
 
 ## 8. 性能优化设计
 
-### 8.1 200 人并发架构设计
+### 8.1 P2P 并发架构设计
 
-#### 8.1.1 并发处理架构
+#### 8.1.1 P2P 并发处理架构
 
 ```mermaid
 graph TB
-    subgraph "教师端（服务器）"
+    subgraph "教师端（主节点）"
         TC[教师客户端<br/>Qt Server]
-        CP[连接池<br/>200连接]
-        VP[视频处理池<br/>8线程]
-        NP[网络处理池<br/>4线程]
+        VP[视频处理池<br/>4线程]
+        NP[网络处理池<br/>2线程]
+        P2P[P2P管理<br/>节点发现/路由]
     end
 
-    subgraph "学生端（客户端）"
-        SC1[学生客户端1-50<br/>子网1]
-        SC2[学生客户端51-100<br/>子网2]
-        SC3[学生客户端101-150<br/>子网3]
-        SC4[学生客户端151-200<br/>子网4]
+    subgraph "中继节点（4个）"
+        R1[中继节点1<br/>转发50人]
+        R2[中继节点2<br/>转发50人]
+        R3[中继节点3<br/>转发50人]
+        R4[中继节点4<br/>转发50人]
     end
 
-    subgraph "网络优化"
-        LB[负载均衡<br/>智能分发]
+    subgraph "终端节点（200个）"
+        T1[终端节点1-50<br/>仅接收]
+        T2[终端节点51-100<br/>仅接收]
+        T3[终端节点101-150<br/>仅接收]
+        T4[终端节点151-200<br/>仅接收]
+    end
+
+    subgraph "智能优化"
+        LB[负载均衡<br/>动态分发]
         QC[质量控制<br/>自适应码率]
         BC[带宽控制<br/>流量管理]
+        FR[故障恢复<br/>自动切换]
     end
 
-    TC --> CP
-    CP --> VP
-    CP --> NP
-    VP --> LB
-    NP --> LB
+    TC --> VP
+    VP --> NP
+    NP --> P2P
+    P2P --> LB
     LB --> QC
     QC --> BC
-    BC --> SC1
-    BC --> SC2
-    BC --> SC3
-    BC --> SC4
+    BC --> R1
+    BC --> R2
+    BC --> R3
+    BC --> R4
+    R1 --> T1
+    R2 --> T2
+    R3 --> T3
+    R4 --> T4
+    FR --> R1
+    FR --> R2
+    FR --> R3
+    FR --> R4
 ```
 
-#### 8.1.2 性能目标
+#### 8.1.2 P2P 性能目标
 
 **核心性能指标**：
 
-- **并发处理**：支持 200 人并发，CPU 占用 <50%
-- **响应时间**：屏幕共享延迟 <200ms（p95），操作响应 <500ms
-- **资源占用**：内存 <200MB（PC 端），网络带宽 <10Mbps
-- **吞吐量**：>1000 请求/秒，支持 30fps 视频流
+- **并发处理**：支持 200+ 人并发，教师机 CPU <30%，中继节点 CPU <50%
+- **响应时间**：P2P 分发延迟 <150ms（p95），操作响应 <300ms
+- **资源占用**：教师机内存 <150MB，中继节点内存 <200MB
+- **吞吐量**：>2000 请求/秒，支持 60fps 视频流
 
-**教育场景优化**：
+**P2P 网络优势**：
 
-- **网络自适应**：根据网络状况自动调整视频质量
-- **设备适配**：支持不同分辨率设备（4K 到 720p）
-- **断线重连**：网络中断后 5s 自动重连
-- **离线缓存**：支持离线回放和缓存
+- **负载分散**：教师机负载降低 75%（从 200 连接降至 4连接）
+- **网络优化**：就近节点分发，延迟降低 25%
+- **容错性强**：单节点故障影响 <25% 用户
+- **扩展性好**：支持 500+ 人并发（增加中继节点）
+
+**分阶段性能目标**：
+
+- **MVP 阶段**：支持 150 人并发，P2P 延迟 <200ms，教师机 CPU <40%
+- **V1.0 阶段**：支持 200 人并发，P2P 延迟 <150ms，教师机 CPU <30%
+- **V1.1 阶段**：支持 300 人并发，P2P 延迟 <100ms，教师机 CPU <25%
 
 ### 8.2 优化策略
 
-#### 8.2.1 系统级优化
+#### 8.2.1 P2P 系统级优化
 
 **多线程架构**：
 
 - **主线程**：UI 渲染和用户交互
-- **网络线程池**：4 个线程处理网络 I/O
-- **视频处理线程池**：8 个线程处理视频编码/解码
+- **P2P 网络线程池**：2 个线程处理 P2P 网络 I/O
+- **视频处理线程池**：4 个线程处理视频编码/解码
+- **中继转发线程池**：2 个线程处理视频转发
 - **数据库线程**：1 个线程处理数据库操作
-- **文件 I/O 线程**：2 个线程处理文件操作
+- **文件 I/O 线程**：1 个线程处理文件操作
 
-**内存管理优化**：
+**P2P 内存管理优化**：
 
-- **对象池**：复用视频帧对象，减少内存分配
-- **智能缓存**：LRU 缓存策略，缓存热点数据
-- **内存预分配**：启动时预分配内存池
-- **垃圾回收**：定期清理无用对象
+- **视频帧池**：复用视频帧对象，减少内存分配
+- **网络缓冲区**：预分配网络缓冲区，提高传输效率
+- **节点缓存**：缓存 P2P 节点信息，减少网络发现开销
+- **智能预取**：预测用户需求，提前缓存视频数据
 
-#### 8.2.2 网络级优化
+**负载均衡优化**：
 
-**连接管理**：
+- **动态节点选择**：根据实时负载选择最优中继节点
+- **流量分配**：智能分配视频流到不同中继节点
+- **故障检测**：实时检测节点故障，自动切换
+- **性能监控**：监控各节点性能，动态调整策略
 
-- **连接池**：复用 TCP/UDP 连接，减少连接建立时间
-- **长连接**：保持长连接，减少握手开销
-- **心跳机制**：定期发送心跳包，检测连接状态
-- **断线重连**：自动重连机制，保证连接稳定性
+#### 8.2.2 P2P 网络级优化
+
+**P2P 连接管理**：
+
+- **WebRTC Mesh**：建立 P2P 网状连接
+- **连接复用**：复用现有 P2P 连接，减少建立开销
+- **心跳机制**：定期检测 P2P 连接状态
+- **自动重连**：P2P 连接断开时自动重建
+
+**智能路由优化**：
+
+- **最短路径**：选择延迟最低的传输路径
+- **负载均衡**：避免单一路径过载
+- **容错路由**：提供备用传输路径
+- **动态调整**：根据网络状况实时调整路由
 
 **数据传输优化**：
 
